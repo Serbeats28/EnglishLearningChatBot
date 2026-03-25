@@ -133,11 +133,11 @@ const ConfigurationController = {
 
                 if (themeErr || !theme) throw new Error('Theme not found')
 
-                let updatePayload = { chat_bot_theme_id: theme.id }
-                let matchCondition = {}
+                let upsertData = { chat_bot_theme_id: theme.id }
+                let conflictColumn = ''
 
                 if (uuid) {
-                    // Get the internal user ID from the UUID
+                    // Get internal user ID from the UUID
                     const { data: user, error: userErr } = await supabase
                         .from('users')
                         .select('id')
@@ -146,24 +146,25 @@ const ConfigurationController = {
 
                     if (userErr || !user) throw new Error('User not found')
                     
-                    updatePayload.user_id = user.id
-                    matchCondition = { user_id: user.id }
+                    upsertData.user_id = user.id
+                    conflictColumn = 'user_id' // Tell Supabase to check for existing user_id
                 } else {
-                    updatePayload.user_ip_address = ip_address
-                    matchCondition = { user_ip_address: ip_address }
+                    upsertData.user_ip_address = ip_address
+                    conflictColumn = 'user_ip_address' // Tell Supabase to check for existing IP
                 }
 
-                // 2. Use upsert to either insert or update based on the unique column
-                // Note: user_setup needs a unique constraint on user_id or user_ip_address for this to work best
+                // 2. Use UPSERT instead of INSERT
+                // This prevents the "duplicate key" error by updating the row if the conflictColumn matches
                 const { error: upsertErr } = await supabase
                     .from('user_setup')
-                    .upsert(updatePayload, { onConflict: uuid ? 'user_id' : 'user_ip_address' })
+                    .upsert(upsertData, { onConflict: conflictColumn })
 
                 if (upsertErr) throw new Error(upsertErr.message)
 
                 return res.json({ error_message: '' })
             })
-        } catch (err) {
+        } 
+        catch (err) {
             return res.json({ error_message: err.message })
         }
     }
