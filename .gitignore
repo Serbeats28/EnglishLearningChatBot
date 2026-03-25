@@ -1,0 +1,8 @@
+
+# Backend secrets
+/backend/.env
+/backend/config/app-secret-key.json
+
+# Node modules
+/backend/node_modules
+/frontend/node_modules
