@@ -102,7 +102,6 @@ const ConfigurationController = {
                         .eq('user_id', user.id)
                         .single()
                     if (error) throw new Error("Failed to get configuration")
-                    console.log('record', record)
                     return res.json({ error_message: '', settings: 'record.user_setup[0].chat_bot_themes' })
                 } else {
                     const { data, error } = await query
