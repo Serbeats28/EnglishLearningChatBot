@@ -5,10 +5,17 @@ const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
     secure: true, 
+    pool: true, // Reuses connections to make sending faster
+    family: 4,  // CRITICAL: Forces IPv4 to fix the Render ENETUNREACH error
     auth: {
-		user: process.env.EMAIL_USER,
-		pass: process.env.EMAIL_PASS
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
     },
+    // Adding this ensures the server name matches for the SSL handshake
+    tls: {
+        servername: 'smtp.gmail.com',
+        rejectUnauthorized: true
+    }
 })
 
 const sendingEmail = async (email_address, otp_code) =>{
@@ -28,7 +35,7 @@ const sendingEmail = async (email_address, otp_code) =>{
 			}
 
 			const result = await transporter.sendMail(mailOptions)
-			if(result) return true
+			return !!result
     } 
     catch (err) {
 			console.log("sendingEmail: ", err.message)
