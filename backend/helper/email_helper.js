@@ -1,27 +1,11 @@
 require('dotenv').config()
-const nodemailer = require("nodemailer")
+const { Resend } = require('resend')
 
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true, 
-    pool: true, // Reuses connections to make sending faster
-    family: 4,  // CRITICAL: Forces IPv4 to fix the Render ENETUNREACH error
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    // Adding this ensures the server name matches for the SSL handshake
-    tls: {
-        servername: 'smtp.gmail.com',
-        rejectUnauthorized: true
-    }
-})
-
+const resend =  new Resend(process.env.RESEND_API_KEY)
 const sendingEmail = async (email_address, otp_code) =>{
     try {
 			const mailOptions = {
-				from: `"English Learning Assistant" <EnglishLearningAssistant@gmail.com>`,
+				from: `English Learning Assistant <onboarding@resend.dev>`,
 				to: email_address,
 				subject: "Your Verification Code",
 				html: `
@@ -34,11 +18,12 @@ const sendingEmail = async (email_address, otp_code) =>{
 				`,
 			}
 
-			const result = await transporter.sendMail(mailOptions)
+			const result = await resend.emails.send(mailOptions)
 			return !!result
     } 
     catch (err) {
 			console.log("sendingEmail: ", err.message)
+			return false 
     }
 }
 
