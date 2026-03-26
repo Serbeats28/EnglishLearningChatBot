@@ -87,8 +87,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, nextTick } from "vue"
-import { appDefaultThemeConfiguration, systemMessage, confirmationMessage, showWaitBox, closeWaitBox } from '../helper/common'
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue"
+import { systemMessage, confirmationMessage, showWaitBox, closeWaitBox } from '../helper/common'
 import { useChatStore } from "../helper/store";
 import { useRoute, useRouter } from 'vue-router'
 import ApiRequest from "../helper/ApiConfig";
@@ -246,14 +246,16 @@ onMounted(async() =>{
     await chatStore.fetchConversations()
   } 
   catch (err) {
-    console.error("Error fetching chat list:", err)
+    systemMessage("Error fetching chat list:" + err, 'error')
   } 
   finally {
-    const defaultTheme = await appDefaultThemeConfiguration()
-    selectedItem.value = defaultTheme.toLowerCase() || ''
     window.addEventListener('click', closeAllMenus)
   }
 })
+
+watch(() => props.theme, (newTheme) => {
+  selectedItem.value = (newTheme || 'system').toLowerCase()
+}, { immediate: true })
 
 onUnmounted(() => window.removeEventListener('click', closeAllMenus))
 </script>

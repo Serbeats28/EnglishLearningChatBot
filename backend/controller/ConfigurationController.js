@@ -80,7 +80,7 @@ const ConfigurationController = {
         try {
             const uuid = req.query.uuid
             const ip_address = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-
+            
             await executeQuery(res, async (supabase) => {
                 let query = supabase
                     .from('user_setup')
@@ -95,15 +95,15 @@ const ConfigurationController = {
 
                 if (uuid) {
                     // Join logic: filter user_setup by the unique_uid in the related users table
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('id, user_setup(chat_bot_themes(id, code, description))')
-                        .eq('unique_uid', uuid)
-                        .single()
-
-                    if (error) throw new Error("Failed to get configuration")
+                    const {data: user, recordError} = await supabase.from('users').select('id').eq('unique_uid', uuid).single()
+                    if(recordError) throw new Error('Failed to get user configuration.')
                     
-                    return res.json({ error_message: '', settings: data.user_setup[0].chat_bot_themes })
+                    const { data: record, error } = await query
+                        .eq('user_id', user.id)
+                        .single()
+                    if (error) throw new Error("Failed to get configuration")
+                    console.log('record', record)
+                    return res.json({ error_message: '', settings: 'record.user_setup[0].chat_bot_themes' })
                 } else {
                     const { data, error } = await query
                         .eq('user_ip_address', ip_address)
@@ -122,9 +122,8 @@ const ConfigurationController = {
         try {
             const { uuid, code } = req.body
             const ip_address = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-
             await executeQuery(res, async (supabase) => {
-                // 1. Get the theme ID first
+                let result 
                 const { data: theme, error: themeErr } = await supabase
                     .from('chat_bot_themes')
                     .select('id')
@@ -132,36 +131,35 @@ const ConfigurationController = {
                     .single()
 
                 if (themeErr || !theme) throw new Error('Theme not found')
-
-                let upsertData = { chat_bot_theme_id: theme.id }
-                let conflictColumn = ''
-
-                if (uuid) {
-                    // Get internal user ID from the UUID
-                    const { data: user, error: userErr } = await supabase
-                        .from('users')
-                        .select('id')
-                        .eq('unique_uid', uuid)
-                        .single()
-
-                    if (userErr || !user) throw new Error('User not found')
+                
+                if(uuid){
+                    const {data: user, error: userErr } = await supabase.from('users').select('id').eq('unique_uid', uuid)
+                    if(userErr) throw new Error('Error getting user.')
                     
-                    upsertData.user_id = user.id
-                    conflictColumn = 'user_id' // Tell Supabase to check for existing user_id
-                } else {
-                    upsertData.user_ip_address = ip_address
-                    conflictColumn = 'user_ip_address' // Tell Supabase to check for existing IP
+                    const {data: setupRecord, error: setupRecordErr} = await supabase.from('user_setup').select('id').eq('user_id', user[0].id)
+                    
+                    if(setupRecordErr) throw new Error('Getting Set up Error.')
+
+                    if(setupRecord.length == 0){ 
+                        result = await supabase.from('user_setup').insert([{user_id: user[0].id, chat_bot_theme_id: theme.id}]).select()
+                    }
+                    else{
+                        result = await supabase.from('user_setup').update({chat_bot_theme_id: theme.id}).eq('id', setupRecord[0].id).select()
+                    }
                 }
-
-                // 2. Use UPSERT instead of INSERT
-                // This prevents the "duplicate key" error by updating the row if the conflictColumn matches
-                const { error: upsertErr } = await supabase
-                    .from('user_setup')
-                    .upsert(upsertData, { onConflict: conflictColumn })
-
-                if (upsertErr) throw new Error(upsertErr.message)
-
-                return res.json({ error_message: '' })
+                else{
+                    const {data: setupRecord, error: setupRecordErr} = await supabase.from('user_setup').select('id').eq('user_ip_address', ip_address)
+                    if(setupRecordErr) throw new Error('Getting Set up Error.')
+                    if(setupRecord.length == 0){ 
+                        result = await supabase.from('user_setup').insert([{user_ip_address: ip_address, chat_bot_theme_id: theme[0].id}]).select()
+                    }
+                    else{
+                        result = await supabase.from('user_setup').update({chat_bot_theme_id: theme.id}).eq('user_ip_address', ip_address).select()
+                    }
+                    
+                }
+                if(!result) throw new Error('Error setup configuration.')
+                return res.json({error_message: ''})
             })
         } 
         catch (err) {

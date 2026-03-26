@@ -14,7 +14,12 @@ const supabase = require('./config/supabase.js')
 app.use(cookieParser())
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+    // origin: 'http://10.0.2.48:8081', // Your Vue dev port
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'api-key'],
+    maxAge: 86400 // Browser remembers for 24 hours
+}))
 
 
 // const pool = new Pool(dbConfig)
@@ -25,7 +30,7 @@ app.use((req, res, next)=>{
 
     next()
 })
-
+app.get('/favicon.ico', (req, res) => res.status(204).end())
 app.use(async (req, res, next)=>{
     try {
         res.locals.pool = supabase
