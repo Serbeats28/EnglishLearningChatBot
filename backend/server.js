@@ -15,10 +15,9 @@ app.use(cookieParser())
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 app.use(cors({
-    // origin: 'http://10.0.2.48:8081', // Your Vue dev port
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'api-key'],
-    maxAge: 86400 // Browser remembers for 24 hours
+    maxAge: 86400
 }))
 
 
