@@ -184,7 +184,9 @@ const ChatController = {
             const conversation = await executeQuery(res, (supabase) => 
                 getConversationBySessionId(supabase, token)
             )
-            return res.json({ error_message: "", conversation: conversation || [] })
+            if(conversation.length == 0) throw new Error("This chat or token is not found in our system.")
+            
+            return res.json({ error_message: "", conversation: conversation})
         } catch (err) {
             return res.json({ error_message: err.message, conversation: [] })
         }

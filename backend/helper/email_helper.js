@@ -1,3 +1,4 @@
+require('dotenv').config()
 const nodemailer = require("nodemailer")
 
 const transporter = nodemailer.createTransport({
@@ -5,8 +6,8 @@ const transporter = nodemailer.createTransport({
     port: 465,
     secure: true, 
     auth: {
-			user: 'servitojerwin@gmail.com', //process.env.EMAIL_USER, // Use environment variables!
-			pass: 'wmaiiovttjkyryew' //process.env.EMAIL_PASS, // Your 16-character App Password
+		user: process.env.EMAIL_USER,
+		pass: process.env.EMAIL_PASS
     },
 })
 

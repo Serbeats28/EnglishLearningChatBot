@@ -98,18 +98,14 @@ const ConfigurationController = {
                     const {data: user, recordError} = await supabase.from('users').select('id').eq('unique_uid', uuid).single()
                     if(recordError) throw new Error('Failed to get user configuration.')
                     
-                    const { data: record, error } = await query
-                        .eq('user_id', user.id)
-                        .single()
-                    if (error) throw new Error("Failed to get configuration")
-                    return res.json({ error_message: '', settings: 'record.user_setup[0].chat_bot_themes' })
+                    const { data: record, error: errorRecord } = await query.eq('user_id', user.id)
+                    if (errorRecord) throw new Error("Failed to get configuration")
+                    return res.json({ error_message: '', settings: record.length > 0 ? record[0].chat_bot_themes : {} })
                 } else {
-                    const { data, error } = await query
-                        .eq('user_ip_address', ip_address)
-                        .single()
+                    const { data: record, error } = await query.eq('user_ip_address', ip_address)
                     if (error) throw new Error("Failed to get configuration")
 
-                    return res.json({ error_message: '', settings: data.chat_bot_themes })
+                    return res.json({ error_message: '', settings: record.length > 0 ? record[0].chat_bot_themes : {} })
                 }
             })
         } catch (err) {
@@ -150,7 +146,7 @@ const ConfigurationController = {
                     const {data: setupRecord, error: setupRecordErr} = await supabase.from('user_setup').select('id').eq('user_ip_address', ip_address)
                     if(setupRecordErr) throw new Error('Getting Set up Error.')
                     if(setupRecord.length == 0){ 
-                        result = await supabase.from('user_setup').insert([{user_ip_address: ip_address, chat_bot_theme_id: theme[0].id}]).select()
+                        result = await supabase.from('user_setup').insert([{user_ip_address: ip_address, chat_bot_theme_id: theme.id}]).select()
                     }
                     else{
                         result = await supabase.from('user_setup').update({chat_bot_theme_id: theme.id}).eq('user_ip_address', ip_address).select()

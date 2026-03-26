@@ -75,11 +75,16 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted} from 'vue'
 import { closeWaitBox, confirmationMessage, showWaitBox, systemMessage } from '../helper/common'
 import ApiRequest from '../helper/ApiConfig'
 import {useRouter} from 'vue-router'
 
+
+onMounted(() =>{
+  const isLoggedIn = localStorage.getItem('isLoggedIn')
+  if(isLoggedIn || isLoggedIn == true) router.replace({name: 'new chat'})
+})
 const router = useRouter()
 const form = reactive({
   email: '',

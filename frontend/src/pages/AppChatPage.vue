@@ -49,10 +49,10 @@
 
 <script setup>
 import { ref, watch, computed, nextTick } from 'vue'
-import { showWaitBox, closeWaitBox, AppChatBot } from '../helper/common'
+import { showWaitBox, closeWaitBox, AppChatBot, systemMessage } from '../helper/common'
 import MarkdownIt from 'markdown-it'
 import ApiRequest from '../helper/ApiConfig'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const md = new MarkdownIt({ breaks: true, linkify: true })
 
@@ -64,7 +64,7 @@ const inputField = ref(null) // Added ref for the textarea
 const token = ref('')
 const props = defineProps({ theme: String })
 const route = useRoute()
-
+const router = useRouter()
 // --- UI HELPERS ---
 
 // This function makes the textarea grow/shrink
@@ -125,6 +125,13 @@ const loadConversation = async (newToken) => {
     showWaitBox('Loading conversation...')
     messages.value = []
     const response = await ApiRequest.get('/get_conversation', { params: { session_id: newToken } })
+
+    if(response && response.data?.error_message){
+      closeWaitBox()
+      router.push({name: 'new chat'})
+      systemMessage(response.data.error_message, 'error')
+      return
+    }
     if (response.data?.conversation) messages.value = response.data.conversation
   } catch (err) {
     error_message.value.push({ role: 'assistant', content: 'Failed to load history.' })
